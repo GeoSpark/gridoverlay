@@ -18,8 +18,8 @@
  *                                                                         *
  ***************************************************************************/
 """
-
-from PyQt4 import QtGui
+import pdb
+from PyQt4 import QtGui, QtCore
 from qgis import core, gui
 from qgis.core import QGis
 

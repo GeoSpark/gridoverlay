@@ -52,7 +52,7 @@ class GridOverlay:
 
         self.action_newGrid.triggered.connect(self.run)
         
-        core.QgsPluginLayerRegistry.instance().addPluginLayerType(GridPluginLayerType())
+        core.QgsPluginLayerRegistry.instance().addPluginLayerType(GridPluginLayerType(self.iface))
         
     def unload(self):
         '''
@@ -63,7 +63,7 @@ class GridOverlay:
         core.QgsPluginLayerRegistry.instance().removePluginLayerType(GridPluginLayer.LAYER_TYPE)
 
     def run(self):
-        layer = GridPluginLayer()
+        layer = GridPluginLayer(self.iface)
         layer.showDialog()
         
         if layer.isValid():

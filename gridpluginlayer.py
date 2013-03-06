@@ -20,9 +20,10 @@
 """
 
 import math
+import pdb
 
 from PyQt4 import QtCore, QtGui, QtXml
-from qgis import core
+from qgis import core, gui
 from qgis.core import QGis
 from util import *
 
@@ -41,7 +42,7 @@ class GridPluginLayer(core.QgsPluginLayer):
         5: core.QgsField('offset_y', QtCore.QVariant.Double, 'double', 8, 4)
        }
 
-    def __init__(self):
+    def __init__(self, iface):
         core.QgsPluginLayer.__init__(self, GridPluginLayer.LAYER_TYPE,
                                      'Grid overlay')
         self.setValid(True)
@@ -80,6 +81,10 @@ class GridPluginLayer(core.QgsPluginLayer):
         # initialisation straight from the current project.
         crs = core.QgsCoordinateReferenceSystem(srid, core.QgsCoordinateReferenceSystem.InternalCrsId)
         self.setCrs(crs)
+        
+        self.clickTool = gui.QgsMapToolEmitPoint(iface.mapCanvas())
+        self.clickTool.canvasClicked.connect(self.canvasClicked)
+        iface.mapCanvas().setMapTool(self.clickTool)
 
     def draw(self, renderContext):
         mapToPixel = renderContext.mapToPixel()
@@ -426,3 +431,30 @@ class GridPluginLayer(core.QgsPluginLayer):
             self.emit(QtCore.SIGNAL('repaintRequested()'))
         else:
             self.setValid(False)
+            
+    def canvasClicked(self, point, button):
+        valid, xc, yc = self.pointToCell(point)
+        if valid:
+            QtGui.QMessageBox.warning(None, 'Foo', 'x: {0} y: {1}'.format(xc, yc))
+        
+    def pointToCell(self, point):
+        s = math.sin(math.radians(self.baselineAngle))
+        c = math.cos(math.radians(self.baselineAngle))
+
+        proj = core.QgsProject.instance()
+        srid = proj.readNumEntry('SpatialRefSys', '/ProjectCRSID', 3452)[0]
+        crs = core.QgsCoordinateReferenceSystem(srid, core.QgsCoordinateReferenceSystem.InternalCrsId)
+
+        xform = core.QgsCoordinateTransform(crs, self.crs())
+        xpoint = xform.transform(point)
+        
+        x = xpoint.x() - self.origin.x()
+        y = xpoint.y() - self.origin.y()
+        
+        xc = int(math.floor((x * c / self.cellSizeX) - (y * s / self.cellSizeY)) - self.gridOffsetX)
+        yc = int(math.floor((x * s / self.cellSizeX) + (y * c / self.cellSizeY)) - self.gridOffsetY)
+        
+        valid = xc >= 0 and yc >= 0 and xc < (self.numCellsX - self.gridOffsetX) and yc < (self.numCellsY - self.gridOffsetY)
+        
+        return (valid, xc, yc)
+        

@@ -24,11 +24,12 @@ from qgis import core
 from gridpluginlayer import GridPluginLayer
 
 class GridPluginLayerType(core.QgsPluginLayerType):
-    def __init__(self):
+    def __init__(self, iface):
         core.QgsPluginLayerType.__init__(self, GridPluginLayer.LAYER_TYPE)
+        self.iface = iface
     
     def createLayer(self):
-        return GridPluginLayer()
+        return GridPluginLayer(self.iface)
 
     def showLayerProperties(self, layer):
         layer.showDialog()
